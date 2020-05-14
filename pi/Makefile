@@ -14,7 +14,7 @@ cuda_pi : cudapi.cu
 # Add more rules here for running the cuda version ...
 
 run : cuda_pi
-	$(RUN) cuda_pi
+	$(RUN) cuda_pi 10 10
 
 clean :
 	rm -f cuda_pi *~ a.out
