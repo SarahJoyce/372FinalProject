@@ -13,20 +13,21 @@
 #include <assert.h>
 //int rank;
 //int numprocs;
-__global__ void pin(int *d_result, double stop){
-  for(double x=(double)blockIdx.x; x<stop;x+=(double)gridDim.x){
-    double tmp=sin(x);
+__global__ void pin(int *d_result, double stop, int numBlocks){
+  int i=blockIdx.x;
+  for(i; i<(int)stop;i+=numBlocks){
+    double tmp=sin((double)i);
     tmp=tmp*tmp;
     int z=(int) (tmp*10000.0);
-    d_result[(int)x]=(d_result[(int)x]+z)%10000;
-//    printf("x=%d is %f\n",x,d_result[(int)x]);
+    d_result[i]=(d_result[i]+z)%10000;
+//    printf("i=%d is %d\n",i,d_result[i]);
   }
 }
 
 //int main(void)??
 int main(int argc, char *argv[]) {
   //change the params below later
-  int numBlocks=100;
+  int numBlocks=512;
   clock_t start_time = clock();
   assert(argc==2);
 
@@ -41,22 +42,24 @@ int main(int argc, char *argv[]) {
 
   int *d_result;
   cudaMalloc((void**)&d_result, numBlocks*sizeof(int));
-  cudaMemcpy(d_result, &result, numBlocks*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_result, result, numBlocks*sizeof(int), cudaMemcpyHostToDevice);
 
-  pin<<<numBlocks,1>>>(d_result,stop);
+  pin<<<numBlocks,1>>>(d_result,stop,numBlocks);
 
   //MPI_Reduce used to be here
-  cudaMemcpy(result, d_result, sizeof(int),cudaMemcpyDeviceToHost);
+  cudaMemcpy(result, d_result, numBlocks*sizeof(int),cudaMemcpyDeviceToHost);
   
   int pin=0;
 
   for(int i=0;i<numBlocks;i++){
-    pin=(pin+result[i])%10000;	
+    pin=(pin+result[i])%10000;
+    printf("result %d is %d.\n",i,result[i]);
   }
   clock_t finish_time = clock();
   double time = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
   printf("The PIN is %d (numBlocks = %d, time = %f sec.)\n", pin, numBlocks, time);
   cudaFree(d_result);
+  free(result);
   fflush(stdout);
   return 0;
 }
