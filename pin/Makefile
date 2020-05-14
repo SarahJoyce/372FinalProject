@@ -1,13 +1,13 @@
 CC = nvcc
 RUN = srun -n 1 --gres=gpu:1
-SMALL  =        100
-MEDIUM =   100000000
-LARGE = 10000000000
+SMALL  =       100
+MEDIUM =  10000000
+LARGE = 1000000000
 
-HOST := $(shell hostname)
-ifeq ($(HOST),cisc372)
-RUN = srun
-endif
+#HOST := $(shell hostname)
+#ifeq ($(HOST),cisc372)
+#RUN = srun
+#endif
 
 all : cuda_pin cuda_small
 

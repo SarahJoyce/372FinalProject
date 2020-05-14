@@ -15,12 +15,14 @@
 //int numprocs;
 __global__ void pin(int *d_result, double stop, int numBlocks){
   int i=blockIdx.x;
-  for(i; i<(int)stop;i+=numBlocks){
-    double tmp=sin((double)i);
+  double x=(double) i;
+  while(x<(int)stop){
+    double tmp=sin(x);
     tmp=tmp*tmp;
     int z=(int) (tmp*10000.0);
     d_result[i]=(d_result[i]+z)%10000;
 //    printf("i=%d is %d\n",i,d_result[i]);
+    x+=(double)numBlocks;
   }
 }
 
@@ -53,7 +55,7 @@ int main(int argc, char *argv[]) {
 
   for(int i=0;i<numBlocks;i++){
     pin=(pin+result[i])%10000;
-    printf("result %d is %d.\n",i,result[i]);
+//    printf("result %d is %d.\n",i,result[i]);
   }
   clock_t finish_time = clock();
   double time = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
