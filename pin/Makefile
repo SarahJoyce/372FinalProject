@@ -9,7 +9,7 @@ LARGE = 1000000000
 #RUN = srun
 #endif
 
-all : cuda_pin cuda_small
+all : cuda_pin cuda_small cuda_med cuda_large
 
 cuda_pin : cudapin.cu
 	$(CC) -o cuda_pin cudapin.cu
