@@ -3,30 +3,29 @@
 #include <assert.h>
 #include <cuda_runtime.h>
 #define INTERVALS 5000000000
-#define nblocks 10
-#define nthreads 10
 
-double num_pi = 0.0;
+int nthreads;
+int nblocks;
+double num_pi;
 
-__global__ void pi(double *area, int threads, int blocks){
+__global__ void pi(double *d_area){
   //do individual thread stuff
   double xi;
-  int i;
-  int threadindex = threadIdx.x + blockIdx.x*threads;
-  for (i=threadindex; i<INTERVALS; i+=threads*blocks) {
+  long i;
+  int a = 0;
+  int threadindex = threadIdx.x + blockIdx.x*blockDim.x;
+  int threads = gridDim.x * blockDim.x;
+  for (i=threadindex; i<INTERVALS; i+=threads) {
     xi=(1.0/INTERVALS)*(i+0.5);
-    area[i] += 4.0/(INTERVALS*(1.0+xi*xi));
-  }
+    a = 4.0/(INTERVALS*(1.0+xi*xi));
+  }d_area[threadindex] = a;
 }
 
 int main(int argc, char **argv) {
   clock_t start_time = clock();
 
-  //nblocks = (int)atoi(argv[1]);
-  //nthreads = (int)atoi(argv[2]);
-
-  dim3 numBlocks(nblocks);
-  dim3 threadsPerBlock(nthreads);
+  nblocks = (int)atoi(argv[1]);
+  nthreads = (int)atoi(argv[2]);
 
   double *area;
   double *d_area;
@@ -35,19 +34,18 @@ int main(int argc, char **argv) {
     area[i]=0;
   }
 
-  cudaMalloc((void **) &d_area, nblocks*nthreads*sizeof(double));
+  cudaMalloc((double **) &d_area, nblocks*nthreads*sizeof(double));
 
   cudaMemcpy(d_area, area, nblocks*nthreads*sizeof(double), cudaMemcpyHostToDevice);
 
-  pi<<<numBlocks, threadsPerBlock>>>(d_area, nthreads, nblocks);
+  pi<<<nblocks, nthreads>>>(d_area);
 
-  cudaMemcpy(&area, d_area, nblocks*nthreads*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(area, d_area, nblocks*nthreads*sizeof(double), cudaMemcpyDeviceToHost);
 
   //add everything together
   for(int i=0; i<nblocks*nthreads; i++){
     num_pi += area[i];
   }
-  num_pi = num_pi * (1.0/INTERVALS);
 
   clock_t finish_time = clock();
   double time = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
