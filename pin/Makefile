@@ -1,5 +1,5 @@
 CC = nvcc
-RUN = srun -n 4 --gres=gpu:1
+RUN = srun -n 1 --gres=gpu:1
 SMALL  =        100
 MEDIUM =   100000000
 LARGE = 10000000000
@@ -9,7 +9,7 @@ ifeq ($(HOST),cisc372)
 RUN = srun
 endif
 
-all : cuda_pin cuda_small cuda_med cuda_large
+all : cuda_pin cuda_small
 
 cuda_pin : cudapin.cu
 	$(CC) -o cuda_pin cudapin.cu
