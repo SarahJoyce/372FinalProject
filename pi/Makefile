@@ -1,5 +1,5 @@
 CC = nvcc
-RUN = srun -n 1 --gres=gpu:1
+RUN = srun -n 4 --gres=gpu:1
 
 HOST := $(shell hostname)
 ifeq ($(HOST),cisc372)
@@ -14,7 +14,7 @@ cuda_pi : cudapi.cu
 # Add more rules here for running the cuda version ...
 
 run : cuda_pi
-	$(RUN) cuda_pi 10 10
+	$(RUN) cuda_pi 4 5
 
 clean :
 	rm -f cuda_pi *~ a.out

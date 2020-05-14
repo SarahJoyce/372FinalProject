@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <cuda_runtime.h>
 #define INTERVALS 5000000000L
 
 int nthreads;
 int nblocks;
-double num_pi;
+double num_pi = 0.0;
 
 __global__ void pi(double *area, int threads, int blocks){
   //do individual thread stuff
@@ -19,26 +20,44 @@ __global__ void pi(double *area, int threads, int blocks){
 }
 
 int main(int argc, char **argv) {
+  assert(argc==3);
+
+  int arg1 = (int)atoi(argv[1]);
+  int arg2 = (int)atoi(argv[2]);
+  //int arg3 = (int)atoi(argv[3]);
+
+  printf("Arg1: %d", arg1);
+  printf("Arg2: %d", arg2);
+  //printf("Arg3: %d", arg3);
+
   clock_t start_time = clock();
 
-  nthreads = (int)atoi(argv[1]);
-  nblocks = (int)atoi(argv[2]);
+  nblocks = (int)atoi(argv[1]);
+  nthreads = (int)atoi(argv[2]);
+
+  dim3 numBlocks(nblocks, 1, 1);
+  dim3 threadsPerBlock(nthreads, 1, 1);
 
   double *area;
   double *d_area;
   area = (double *)malloc(sizeof(double));
+  for(int i=0; i<nblocks*nthreads; i++){
+    area[i] = 0;
+  }
 
   cudaMalloc((void **) &d_area, nblocks*nthreads*sizeof(double));
 
   cudaMemcpy(d_area, &area, nblocks*nthreads*sizeof(double), cudaMemcpyHostToDevice);
-  //fix the line below
-  pi<<<nblocks, nthreads>>>(d_area, nthreads, nblocks);
+
+  pi<<<numBlocks, threadsPerBlock>>>(d_area, nthreads, nblocks);
+  
+  cudaDeviceSynchronize();
 
   cudaMemcpy(&area, d_area, nblocks*nthreads*sizeof(double), cudaMemcpyDeviceToHost);
 
   //add everything together
   for(int i=0; i<nblocks*nthreads; i++){
-    num_pi+=area[i];
+    num_pi = (num_pi + area[i])*(1.0/INTERVALS);
   }
 
   clock_t finish_time = clock();
