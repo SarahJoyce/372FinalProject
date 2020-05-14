@@ -1,5 +1,5 @@
 CC = nvcc
-RUN = srun -n 10 --gres=gpu:1
+RUN = srun -n 1 --gres=gpu:1
 
 HOST := $(shell hostname)
 ifeq ($(HOST),cisc372)
