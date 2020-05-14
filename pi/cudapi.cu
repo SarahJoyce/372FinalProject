@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   clock_t finish_time = clock();
   double time = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
   
-  printf("Pi is %.2f (nthreads = %d, time = %f sec.)\n", num_pi, nthreads, time);
+  printf("Pi is %.10f (nthreads = %d, time = %f sec.)\n", num_pi, nthreads, time);
   
   free(area);
   cudaFree(d_area);
