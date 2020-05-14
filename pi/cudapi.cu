@@ -1,33 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda_runtime.h>
 #define INTERVALS 5000000000L
 
-//int rank;
-//int numprocs;
-long double pi;
+int nthreads;
+int nblocks;
+double num_pi;
 
-__global__ void pi(void){
-//do individual thread stuff
+__global__ void pi(double *area, int threads, int blocks){
+  //do individual thread stuff
+  double xi;
+  int i;
+  int threadindex = threadIdx.x + blockIdx.x*threads;
+  for (i=threadindex; i<INTERVALS; i+=threads*blocks) {
+    xi=(1.0/INTERVALS)*(i+0.5);
+    area[i] += 4.0/(INTERVALS*(1.0+xi*xi));
+  }
 }
 
-//int main(void)??
-int main(int argc, char *argv[]) {    
-  long double area = 0.0;
-  long double xi;
-  long i;
-
+int main(int argc, char **argv) {
   clock_t start_time = clock();
 
-  //fix rank and numprocs below
-  for (i=(long)rank; i<INTERVALS; i+=(long)numprocs) {
-    xi=(1.0L/INTERVALS)*(i+0.5L);
-    area += 4.0L/(INTERVALS*(1.0L+xi*xi));
+  nthreads = (int)atoi(argv[1]);
+  nblocks = (int)atoi(argv[2]);
+
+  double *area;
+  double *d_area;
+  area = (double *)malloc(sizeof(double));
+
+  cudaMalloc((void **) &d_area, nblocks*nthreads*sizeof(double));
+
+  cudaMemcpy(d_area, &area, nblocks*nthreads*sizeof(double), cudaMemcpyHostToDevice);
+  //fix the line below
+  pi<<<nblocks, nthreads>>>(d_area, nthreads, nblocks);
+
+  cudaMemcpy(&area, d_area, nblocks*nthreads*sizeof(double), cudaMemcpyDeviceToHost);
+
+  //add everything together
+  for(int i=0; i<nblocks*nthreads; i++){
+    num_pi+=area[i];
   }
-  //MPI_Reduce used to be here (add everything together)
+
   clock_t finish_time = clock();
   double time = (double)(finish_time-start_time)/CLOCKS_PER_SEC;
-  //back to main here (used to be rank == 0)
-  printf("Pi is %20.17Lf (nprocs = %d, time = %f sec.)\n", pi, numprocs, time);
+  
+  printf("Pi is %.2f (nthreads = %d, time = %f sec.)\n", num_pi, nthreads, time);
+  
+  free(area);
+  cudaFree(d_area);
   fflush(stdout);
   return 0;
 }
